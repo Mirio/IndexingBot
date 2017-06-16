@@ -27,7 +27,7 @@ def cleantext(msg):
 
 def lambda_handler(event, context):
     ''' Lambda Handler (webhook via api gateway) '''
-    update = telebot.types.Update.de_json(event)
+    update = telebot.types.Update.de_json(event["body"])
     bot.process_new_updates([update])
     return {
         "body": "ok",
@@ -86,7 +86,8 @@ def showlist(message):
     for group in res["hits"]:
         msgout += "--\nName: %s\nDescription: %s\nLink: %s\n" % (
             group["name"], group["desc"], group["url"])
-    bot.send_message(message.from_user.id, (msgout))
+    bot.send_message(message.from_user.id, (msgout),
+                     disable_web_page_preview=True)
 
 @bot.message_handler(commands=['search'])
 def search(message):
@@ -108,7 +109,8 @@ def search(message):
                         group["name"], group["desc"], group["url"])
             if not msgout:
                 msgout = "No group found."
-            bot.send_message(message.from_user.id, (msgout))
+            bot.send_message(message.from_user.id, (msgout),
+                             disable_web_page_preview=True)
             return
         else:
             raise KeyError
