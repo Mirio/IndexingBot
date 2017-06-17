@@ -16,7 +16,7 @@ from algoliasearch import algoliasearch
 # Init telebot
 logger = telebot.logger
 bot = telebot.TeleBot(tgram_token, threaded=False)
-telebot.logger.setLevel(logging.DEBUG)
+telebot.logger.setLevel(logging.INFO)
 
 # Init algolia
 algolia = algoliasearch.Client(algolia_id, algolia_secret)
@@ -44,23 +44,26 @@ def callback_handler(call):
 def start_helper(message):
     ''' Helper for first command '''
     markup = telebot.types.InlineKeyboardMarkup()
-    if "it" in message.from_user.language_code:
-        desc = ("Ciao %s, questo bot e' stato creato al fine di 'unificare'"
-                "tutti i vari gruppi presenti nei network in un'unica "
-                "directory (aggiornata e manutenuta) dove tutti gli "
-                "utenti possono cercare i canali liberamente.\n"
-                "Regole:\n- NO gruppi porno o simili.\n"
-                "- NO gruppi che supportano Warez e qualsiasi altro illecito."
-                "\n\nPer qualsiasi dubbi o domanda contatta @Mirioo" %
-                message.from_user.first_name)
-        markup.add(telebot.types.InlineKeyboardButton(
-            "Richiedi l'aggiunta del tuo gruppo",
-            callback_data="add_helper"))
-        markup.add(telebot.types.InlineKeyboardButton(
-            "Guarda la lista dei gruppi", callback_data="showlist"))
-        markup.add(telebot.types.InlineKeyboardButton(
-            "Ricerca gruppo", callback_data="search"))
-    else:
+    try:
+        if "it" in message.from_user.language_code:
+            desc = ("Ciao %s, questo bot e' stato creato al fine di 'unificare'"
+                    "tutti i vari gruppi presenti nei network in un'unica "
+                    "directory (aggiornata e manutenuta) dove tutti gli "
+                    "utenti possono cercare i canali liberamente.\n"
+                    "Regole:\n- NO gruppi porno o simili.\n"
+                    "- NO gruppi che supportano Warez e qualsiasi altro illecito."
+                    "\n\nPer qualsiasi dubbi o domanda contatta @Mirioo" %
+                    message.from_user.first_name)
+            markup.add(telebot.types.InlineKeyboardButton(
+                "Richiedi l'aggiunta del tuo gruppo",
+                callback_data="add_helper"))
+            markup.add(telebot.types.InlineKeyboardButton(
+                "Guarda la lista dei gruppi", callback_data="showlist"))
+            markup.add(telebot.types.InlineKeyboardButton(
+                "Ricerca gruppo", callback_data="search"))
+        else:
+            raise TypeError
+    except TypeError:
         desc = ("Ciao %s, this bot was created with the purpose to index "
                 "all network groups in one single directory (maintained "
                 "and updated) where users can freely search.\nRules:\n"
@@ -86,8 +89,12 @@ def showlist(message):
     for group in res["hits"]:
         msgout += "--\nName: %s\nDescription: %s\nLink: %s\n" % (
             group["name"], group["desc"], group["url"])
-    bot.send_message(message.from_user.id, (msgout),
-                     disable_web_page_preview=True)
+
+    # Fix split large message
+    splitted_text = telebot.util.split_string(msgout, 3000)
+    for text in splitted_text:
+        bot.send_message(message.from_user.id, (text),
+                         disable_web_page_preview=True)
 
 @bot.message_handler(commands=['search'])
 def search(message):
@@ -101,23 +108,32 @@ def search(message):
                 cleantext(msg_split[1]),
                 {"filters": 'enabled = 1', "hitsPerPage": 500})
             for group in res["hits"]:
-                if "it" in message.from_user.language_code:
-                    msgout += "--\nNome: %s\nDescrizione: %s\nLink: %s\n" % (
-                        group["name"], group["desc"], group["url"])
-                else:
+                try:
+                    if "it" in message.from_user.language_code:
+                        msgout += "--\nNome: %s\nDescrizione: %s\nLink: %s\n" % (
+                            group["name"], group["desc"], group["url"])
+                    else:
+                        raise TypeError
+                except TypeError:
                     msgout += "--\nName: %s\nDescription: %s\nLink: %s\n" % (
                         group["name"], group["desc"], group["url"])
             if not msgout:
                 msgout = "No group found."
-            bot.send_message(message.from_user.id, (msgout),
-                             disable_web_page_preview=True)
+            # Fix split large message
+            splitted_text = telebot.util.split_string(msgout, 3000)
+            for text in splitted_text:
+                bot.send_message(message.from_user.id, (text),
+                                 disable_web_page_preview=True)
             return
         else:
             raise KeyError
     except (KeyError, IndexError, AttributeError):
-        if "it" in message.from_user.language_code:
-            msgout = "Usa: /search <nome da cercare>"
-        else:
+        try:
+            if "it" in message.from_user.language_code:
+                msgout = "Usa: /search <nome da cercare>"
+            else:
+                raise TypeError
+        except TypeError:
             msgout = "Use: /search <name to search>"
         bot.send_message(message.from_user.id, (msgout))
 
@@ -134,24 +150,32 @@ def add_helper(message):
 
             # Check if url is correclty formatted
             if not url.startswith("https://t.me/"):
-                if "it" in message.from_user.language_code:
+                try:
+                    if "it" in message.from_user.language_code:
+                        bot.send_message(message.from_user.id,
+                                         ("Utilizza un url t.me valido."
+                                          " (usa https:// prima)"))
+                        return
+                    else:
+                        raise TypeError
+                except TypeError:
                     bot.send_message(message.from_user.id,
-                                     ("Utilizza un url t.me valido."))
-                    return
-                else:
-                    bot.send_message(message.from_user.id,
-                                     ("Use the t.me format for URL."))
+                                     ("Use the t.me format for URL."
+                                      " (use schema https)"))
                     return
 
             # Check if url is already present
             res = algolia_index.search(url)
             for group in res["hits"]:
                 if group["url"] == url:
-                    if "it" in message.from_user.language_code:
-                        bot.send_message(message.from_user.id,
-                                         ("Gruppo gia' presente."))
-                        return
-                    else:
+                    try:
+                        if "it" in message.from_user.language_code:
+                            bot.send_message(message.from_user.id,
+                                             ("Gruppo gia' presente."))
+                            return
+                        else:
+                            raise TypeError
+                    except TypeError:
                         bot.send_message(message.from_user.id,
                                          ("Group already present."))
                         return
@@ -161,11 +185,14 @@ def add_helper(message):
             res = algolia_index.search(name)
             for group in res["hits"]:
                 if group["name"] == name:
-                    if "it" in message.from_user.language_code:
-                        bot.send_message(message.from_user.id,
-                                         ("Nome gia' presente."))
-                        return
-                    else:
+                    try:
+                        if "it" in message.from_user.language_code:
+                            bot.send_message(message.from_user.id,
+                                             ("Nome gia' presente."))
+                            return
+                        else:
+                            raise TypeError
+                    except TypeError:
                         bot.send_message(message.from_user.id,
                                          ("Name already taken."))
                         return
@@ -179,17 +206,26 @@ def add_helper(message):
                 "owner_id": message.from_user.id,
                 "owner_username": message.from_user.username,
                 "submit_date": timenow,
-                "update_date": timenow
+                "update_date": timenow,
+                "category": "Main",
+                "enabled": False
             })
-            if "it" in message.from_user.language_code:
-                msgout = "%s correttamente aggiunto." % name
-            else:
+            try:
+                if "it" in message.from_user.language_code:
+                    msgout = "%s correttamente aggiunto." % name
+                else:
+                    raise TypeError
+            except TypeError:
                 msgout = "%s added." % name
         else:
             raise KeyError
     except (KeyError, IndexError, AttributeError):
-        if "it" in message.from_user.language_code:
-            msgout = "Usa: /add <url>|<Nome del gruppo>|<descrizione(max 100)>"
-        else:
+        try:
+            if "it" in message.from_user.language_code:
+                msgout = ("Usa: /add <url>|<Nome del gruppo>|"
+                          "<descrizione(max 100)>")
+            else:
+                raise TypeError
+        except TypeError:
             msgout = "Use: /add <url>|<Groupname>|<description (max 100)>"
     bot.send_message(message.from_user.id, (msgout))
