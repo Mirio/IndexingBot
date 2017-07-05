@@ -96,6 +96,23 @@ def showlist(message):
         bot.send_message(message.from_user.id, (text),
                          disable_web_page_preview=True)
 
+@bot.message_handler(commands=['waitlist'])
+def waitlist(message):
+    ''' Show the group in wait list via algolia '''
+    algolia_index = algolia.init_index("groups")
+    msgout = ""
+    res = algolia_index.search(
+        "", {"filters": 'enabled = 0', "hitsPerPage": 500})
+    for group in res["hits"]:
+        msgout += "--\nName: %s\nDescription: %s\nLink: %s\n" % (
+            group["name"], group["desc"], group["url"])
+
+    # Fix split large message
+    splitted_text = telebot.util.split_string(msgout, 3000)
+    for text in splitted_text:
+        bot.send_message(message.from_user.id, (text),
+                         disable_web_page_preview=True)
+
 @bot.message_handler(commands=['search'])
 def search(message):
     ''' Show the group listed via algolia '''
