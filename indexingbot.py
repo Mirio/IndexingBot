@@ -23,7 +23,7 @@ algolia = algoliasearch.Client(algolia_id, algolia_secret)
 
 def cleantext(msg):
     ''' Clear text from malicius data '''
-    return re.sub(r"[^a-z|A-Z|0-9 ]", "", msg)
+    return re.sub(r"[^a-z|A-Z|0-9|?| |'|!|?|_|-|,|.]", "", msg)
 
 def lambda_handler(event, context):
     ''' Lambda Handler (webhook via api gateway) '''
@@ -51,8 +51,12 @@ def start_helper(message):
                     "directory (aggiornata e manutenuta) dove tutti gli "
                     "utenti possono cercare i canali liberamente.\n"
                     "Regole:\n- NO gruppi porno o simili.\n"
-                    "- NO gruppi che supportano Warez e qualsiasi altro illecito."
-                    "\n\nPer qualsiasi dubbi o domanda contatta @Mirioo" %
+                    "- NO gruppi che supportano Warez e qualsiasi "
+                    "altro illecito."
+                    "\n\nPer qualsiasi dubbi o domanda contatta @Mirioo\n"
+                    "Maggiori info al link https://indexingbot.github.io/ \n"
+                    "Lasciaci una review:"
+                    " https://storebot.me/bot/indexingbot" %
                     message.from_user.first_name)
             markup.add(telebot.types.InlineKeyboardButton(
                 "Richiedi l'aggiunta del tuo gruppo",
@@ -69,7 +73,9 @@ def start_helper(message):
                 "and updated) where users can freely search.\nRules:\n"
                 "- No porno group or something like that.\n"
                 "- No Warez group or any illecit group.\n"
-                "If you have doubt please contact @Mirioo" %
+                "If you have doubt please contact @Mirioo\n"
+                "More info: https://indexingbot.github.io/ \n"
+                "Review: https://storebot.me/bot/indexingbot\n" %
                 message.from_user.first_name)
         markup.add(telebot.types.InlineKeyboardButton(
             "Submit your group.", callback_data="add_helper"))

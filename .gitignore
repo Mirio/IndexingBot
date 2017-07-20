@@ -2,3 +2,5 @@
 config.py
 lib/*
 VENV/*
+*.zip
+pages/*
