@@ -4,3 +4,6 @@ lib/*
 VENV/*
 *.zip
 pages/*
+error.log
+checkgroup.py
+*.bak
