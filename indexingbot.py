@@ -259,7 +259,7 @@ def add_helper(message):
 
             # Adding new items
             timenow = datetime.now().isoformat()
-            algolia_index.add_object(
+            algolia_index.save_object(
                 {
                     "name": name,
                     "desc": desc,
@@ -270,7 +270,8 @@ def add_helper(message):
                     "update_date": timenow,
                     "category": "Main",
                     "enabled": False,
-                }
+                },
+                {"autoGenerateObjectIDIfNotExist": True},
             )
             try:
                 if "it" in message.from_user.language_code:
